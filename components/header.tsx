@@ -1,71 +1,89 @@
 'use client'
 
-import { useRole } from '@/lib/role-context'
+import { useMemo } from 'react'
 import { usePathname } from 'next/navigation'
-import { Menu, Bell, User, ChevronDown } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Bell, Menu, User } from 'lucide-react'
+import { useRole } from '@/lib/role-context'
 import { clients } from '@/lib/sample-data'
 
 interface HeaderProps {
   onMenuClick: () => void
 }
 
+const PAGE_TITLES: Record<string, string> = {
+  '/': 'Dashboard',
+  '/quickbooks': 'QuickBooks Connection',
+  '/accounting/overview': 'Accounting Overview',
+  '/accounting/issues': 'Book Health & Issues',
+  '/accounting/reconciliation': 'Bank Reconciliation',
+  '/accounting/tax': 'Tax Reconciliation',
+  '/transactions/overview': 'Transactions Overview',
+  '/transactions/readiness': 'M&A Readiness',
+  '/transactions/buyer-view': 'Buyer View',
+  '/transactions/teaser': 'Teaser Summary',
+  '/requests': 'Requests & Follow-ups',
+  '/data-room': 'Data Room',
+  '/clients': 'Clients',
+  '/documents': 'Documents',
+  '/reports': 'Reports',
+  '/settings': 'Settings',
+}
+
 export function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname()
-  const { role, setRole, selectedClientId, setSelectedClientId } = useRole()
+  const {
+    role,
+    setRole,
+    selectedClientId,
+    setSelectedClientId,
+    roleOptions,
+    isHydrated,
+  } = useRole()
 
-  const getPageTitle = (path: string): string => {
-    const titles: Record<string, string> = {
-      '/': 'Dashboard',
-      '/quickbooks': 'QuickBooks Connection',
-      '/accounting/overview': 'Accounting Overview',
-      '/accounting/issues': 'Book Health & Issues',
-      '/accounting/reconciliation': 'Bank Reconciliation',
-      '/accounting/tax': 'Tax Reconciliation',
-      '/transactions/overview': 'Transactions Overview',
-      '/transactions/readiness': 'M&A Readiness',
-      '/transactions/buyer-view': 'Buyer View',
-      '/transactions/teaser': 'Teaser Summary',
-      '/requests': 'Requests & Follow-ups',
-      '/data-room': 'Data Room',
-      '/clients': 'Clients',
-      '/documents': 'Documents',
-      '/reports': 'Reports',
-      '/settings': 'Settings',
-    }
-    return titles[path] || 'Page'
-  }
+  const pageTitle = useMemo(() => {
+    return PAGE_TITLES[pathname] || 'Page'
+  }, [pathname])
 
-  const roleOptions: Array<{ value: typeof role; label: string }> = [
-    { value: 'internal', label: 'Internal Finance Team' },
-    { value: 'accountant', label: 'Accountant' },
-    { value: 'client', label: 'Client/Business Owner' },
-    { value: 'buyer', label: 'Potential Buyer' },
-  ]
+  const selectedClient = useMemo(() => {
+    return clients.find((client) => client.id === selectedClientId) ?? clients[0]
+  }, [selectedClientId])
 
   return (
-    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 sticky top-0 z-40">
-      <div className="flex items-center gap-4">
+    <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-card px-4 md:px-6">
+      <div className="flex min-w-0 items-center gap-3 md:gap-4">
         <button
+          type="button"
           onClick={onMenuClick}
-          className="p-2 hover:bg-muted rounded-lg transition-colors lg:hidden"
+          className="rounded-lg p-2 transition-colors hover:bg-muted lg:hidden"
           title="Toggle sidebar"
+          aria-label="Toggle sidebar"
         >
           <Menu size={20} className="text-foreground" />
         </button>
-        <h1 className="text-lg font-semibold text-foreground">
-          {getPageTitle(pathname)}
-        </h1>
+
+        <div className="min-w-0">
+          <h1 className="truncate text-base font-semibold text-foreground md:text-lg">
+            {pageTitle}
+          </h1>
+        </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 md:gap-4">
         {/* Client Selector */}
-        <div className="hidden md:flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Client:</span>
+        <div className="hidden items-center gap-2 md:flex">
+          <label
+            htmlFor="client-selector"
+            className="text-xs font-medium text-muted-foreground"
+          >
+            Client:
+          </label>
           <select
-            value={selectedClientId}
+            id="client-selector"
+            value={isHydrated ? selectedClientId : selectedClient?.id}
             onChange={(e) => setSelectedClientId(e.target.value)}
-            className="text-xs bg-muted border border-border rounded px-2 py-1 text-foreground cursor-pointer hover:bg-muted/80 transition-colors max-w-xs"
+            disabled={!isHydrated}
+            className="max-w-[220px] rounded-md border border-border bg-muted px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted/80 disabled:cursor-not-allowed disabled:opacity-70"
+            aria-label="Select client"
           >
             {clients.map((client) => (
               <option key={client.id} value={client.id}>
@@ -77,28 +95,46 @@ export function Header({ onMenuClick }: HeaderProps) {
 
         {/* Role Selector */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground hidden sm:inline">View as:</span>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as typeof role)}
-            className="text-xs bg-muted border border-border rounded px-2 py-1 text-foreground cursor-pointer hover:bg-muted/80 transition-colors"
+          <label
+            htmlFor="role-selector"
+            className="hidden text-xs font-medium text-muted-foreground sm:inline"
           >
-            {roleOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
+            View as:
+          </label>
+          <select
+            id="role-selector"
+            value={isHydrated ? role : roleOptions[0]?.value}
+            onChange={(e) => setRole(e.target.value as typeof role)}
+            disabled={!isHydrated}
+            className="min-w-[160px] rounded-md border border-border bg-muted px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted/80 disabled:cursor-not-allowed disabled:opacity-70 md:min-w-[200px]"
+            aria-label="Select viewing role"
+          >
+            {roleOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
         </div>
 
         {/* Notification Bell */}
-        <button className="p-2 hover:bg-muted rounded-lg transition-colors relative" title="Notifications">
+        <button
+          type="button"
+          className="relative rounded-lg p-2 transition-colors hover:bg-muted"
+          title="Notifications"
+          aria-label="Notifications"
+        >
           <Bell size={20} className="text-foreground" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full"></span>
+          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-destructive" />
         </button>
 
         {/* User Menu */}
-        <button className="p-2 hover:bg-muted rounded-lg transition-colors" title="User menu">
+        <button
+          type="button"
+          className="rounded-lg p-2 transition-colors hover:bg-muted"
+          title="User menu"
+          aria-label="User menu"
+        >
           <User size={20} className="text-foreground" />
         </button>
       </div>
