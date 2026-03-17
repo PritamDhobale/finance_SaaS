@@ -19,6 +19,8 @@ import {
 import { clients } from '@/lib/sample-data'
 import { useRole, type UserRole } from '@/lib/role-context'
 import { cn } from '@/lib/utils'
+import Image from 'next/image'
+import appIcon from '@/app/icon.png'
 
 interface SidebarProps {
   open: boolean
@@ -232,8 +234,15 @@ export function Sidebar({ open, onToggle }: SidebarProps) {
     >
       <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
         <div className={cn('flex min-w-0 items-center gap-2', !open && 'justify-center')}>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sm font-bold text-sidebar-primary-foreground">
-            FA
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden bg-transparent">
+            <Image
+              src={appIcon}
+              alt="FinanceHub logo"
+              width={32}
+              height={32}
+              className="h-full w-full object-contain"
+              priority
+            />
           </div>
           {open && <span className="truncate text-sm font-semibold">FinanceHub</span>}
         </div>
